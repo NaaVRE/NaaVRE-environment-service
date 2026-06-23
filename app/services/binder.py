@@ -1,21 +1,27 @@
 from collections.abc import AsyncGenerator
 import json
 import logging
+from typing import Optional, Tuple
+
+import httpx
+import pydantic
+from pydantic import BaseModel
 
 from app import config
-from app.services.catalogue import upsert_catalogue
-import httpx
 
 logger = logging.getLogger(__name__)
 
 
-async def stream_binder_build(binder_ref: str) -> AsyncGenerator[str, None]:
+class BinderBuildEvent(BaseModel):
+    phase: str | None = None
+    message: str | None = None
+    imageName: str | None = None
+
+
+async def stream_binder_build(binder_ref: str) -> AsyncGenerator[
+    Tuple[str, BinderBuildEvent | None], None]:
     """
     Proxies the Binder SSE stream to the caller, then upserts the catalogue.
-
-    Yields raw SSE lines (forwarded verbatim to the client). After the stream
-    ends — whether by completion, failure, or error — the catalogue is updated
-    if an image name was received.
     """
     binder_build_url = f"{config.BINDER_URL}/build/{binder_ref}"
     logger.info(f"Building {binder_build_url}")
@@ -23,8 +29,6 @@ async def stream_binder_build(binder_ref: str) -> AsyncGenerator[str, None]:
         "Accept": "text/event-stream",
         "Authorization": f"Bearer {config.BINDER_API_TOKEN}",
         }
-    image_name: str | None = None
-
     try:
         async with httpx.AsyncClient(
                 timeout=None, verify=config.VERIFY_SSL
@@ -34,61 +38,48 @@ async def stream_binder_build(binder_ref: str) -> AsyncGenerator[str, None]:
                     ) as response:
                 response.raise_for_status()
 
-                async for raw_line in response.aiter_lines():
-                    logger.debug(f"Binder SSE: {raw_line}")
+                async for raw_message in response.aiter_lines():
+                    logger.debug(f"Binder SSE: {raw_message}")
 
-                    # Forward every line to the client (including heartbeats/comments).
-                    yield raw_line + "\n"
-
-                    # Skip non-data lines for internal processing.
-                    if not raw_line or raw_line.startswith(":"):
-                        continue
-
-                    if raw_line.startswith("data:"):
-                        payload = raw_line[len("data:"):].strip()
+                    # Parse data messages
+                    if raw_message.startswith("data:"):
+                        payload = raw_message[len("data:"):].strip()
+                    # Forward other messages unmodified to the client
                     else:
+                        yield raw_message + "\n", None
                         continue
 
                     try:
-                        event = json.loads(payload)
-                    except json.JSONDecodeError:
-                        logger.warning(f"Could not parse SSE line: {raw_line}")
+                        parsed_event = BinderBuildEvent.model_validate_json(
+                            payload
+                            )
+                    except pydantic.ValidationError:
+                        logger.warning(f"Could not parse SSE line: {raw_message}")
+                        yield raw_message + "\n", None
                         continue
 
-                    phase = event.get("phase")
+                    yield raw_message + "\n", parsed_event
 
-                    if phase == "failed":
+                    if parsed_event.phase == "failed":
                         logger.error(
-                            "Binder build failed for %s: %s",
-                            binder_ref,
-                            event.get("message"),
+                            f"Binder build failed for {binder_ref}: {parsed_event.message}"
                             )
-                        return  # nothing to sync
+                        return
 
-                    if phase == "built":
-                        image_name = event.get("imageName")
+                    if parsed_event.phase == "built":
                         logger.info(
-                            "Binder build complete for %s — image: %s",
-                            binder_ref,
-                            image_name,
+                            f"Binder build complete for {binder_ref}. Image: {parsed_event.imageName}"
                             )
+                        # Stop listening after phase=built (binderhub will attempt to launch the image afterward, but we don't care)
+                        return
 
     except httpx.HTTPStatusError as exc:
         msg = f"Binder build request failed ({binder_ref}): {exc}"
         logger.error(msg)
-        yield f"data: {json.dumps({'phase': 'failed', 'message': msg})}\n\n"
+        yield f"data: {json.dumps({'phase': 'failed', 'message': msg})}\n\n", None
         return
     except Exception as exc:
         msg = f"Unexpected error watching Binder build for {binder_ref}: {exc}"
         logger.exception(msg)
-        yield f"data: {json.dumps({'phase': 'failed', 'message': msg})}\n\n"
+        yield f"data: {json.dumps({'phase': 'failed', 'message': msg})}\n\n", None
         return
-
-    if not image_name:
-        logger.warning(
-            "No imageName received for %s; skipping catalogue sync.",
-            binder_ref
-            )
-        return
-
-    await upsert_catalogue(binder_ref, image_name)
