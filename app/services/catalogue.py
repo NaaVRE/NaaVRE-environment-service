@@ -19,9 +19,7 @@ async def upsert_catalogue(binder_ref: str, docker_image: str) -> None:
             get_resp.raise_for_status()
             results = get_resp.json()
         except Exception as exc:  # noqa: BLE001
-            logger.exception(
-                "catalogue GET failed for %s: %s", binder_ref, exc
-                )
+            logger.exception(f"catalogue GET failed for {binder_ref}: {exc}")
             return
 
         payload = {"binder_ref": binder_ref, "docker_image": docker_image}
@@ -35,19 +33,15 @@ async def upsert_catalogue(binder_ref: str, docker_image: str) -> None:
                     f"{catalogue_base}/{record_id}", json=payload
                     )
                 put_resp.raise_for_status()
-                logger.info("catalogue updated for %s", binder_ref)
+                logger.info(f"catalogue updated for {binder_ref}")
             except Exception as exc:  # noqa: BLE001
-                logger.exception(
-                    "catalogue PUT failed for %s: %s", binder_ref, exc
-                    )
+                logger.exception(f"catalogue PUT failed for {binder_ref}: {exc}")
 
         # If no record create one
         else:
             try:
                 post_resp = await client.post(catalogue_base, json=payload)
                 post_resp.raise_for_status()
-                logger.info("catalogue record created for %s", binder_ref)
+                logger.info(f"catalogue record created for {binder_ref}")
             except Exception as exc:
-                logger.exception(
-                    "catalogue POST failed for %s: %s", binder_ref, exc
-                    )
+                logger.exception(f"catalogue POST failed for {binder_ref}: {exc}")
