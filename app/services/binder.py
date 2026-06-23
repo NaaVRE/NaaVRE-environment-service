@@ -19,6 +19,7 @@ async def watch_binder_and_sync_catalogue(
     logger.info(f"Building {binder_build_url}")
     headers = {
         "Accept": "text/event-stream",
+        "Authorization": f"Bearer {config.BINDER_API_TOKEN}"
         }
     image_name: str | None = None
 
@@ -32,6 +33,7 @@ async def watch_binder_and_sync_catalogue(
                 response.raise_for_status()
 
                 async for raw_line in response.aiter_lines():
+                    logger.debug(f"Binder response: {raw_line}")
                     # SSE lines look like:  data: {...}
                     # Comment/heartbeat lines look like:  :heartbeat  — skip them.
                     if not raw_line or raw_line.startswith(":"):
