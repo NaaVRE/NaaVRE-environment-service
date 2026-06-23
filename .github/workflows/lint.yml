@@ -1,0 +1,25 @@
+name: Lint
+
+on:
+  workflow_call:
+    inputs:
+      runs-on:
+        default: ubuntu-latest
+        type: string
+
+
+jobs:
+  lint:
+    runs-on: ${{ inputs.runs-on }}
+    strategy:
+      fail-fast: true
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python 3.14 and install dependencies from requirements.txt
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.14-dev'
+
+      - name: flake8 Lint
+        uses: py-actions/flake8@v2

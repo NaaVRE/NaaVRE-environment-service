@@ -1,0 +1,54 @@
+name: Build helm
+
+on:
+  workflow_call:
+    inputs:
+      oci_repo:
+        description: 'OCI repository for the chart'
+        type: string
+        required: true
+      version:
+        description: 'Helm chart version'
+        type: string
+        required: true
+      push:
+        description: 'Push to the image registry'
+        type: boolean
+        required: true
+
+jobs:
+  build:
+    name: Build helm
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install Helm
+        uses: azure/setup-helm@v5
+
+      - name: Add version to Chart.yaml files
+        run: |
+          find . -name 'Chart.yaml' | while read file; do
+            sed -i "s/version: 0.0.0-dev/version: ${{ inputs.version }}/g" "$file"
+            sed -i "s/appVersion: 0.0.0-dev/appVersion: ${{ inputs.version }}/g" "$file"
+          done
+        if: ${{ inputs.push }}
+
+      - name: Package Helm charts
+        run: |
+          helm package helm/naavre-environment-service -d .charts-packages/
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push Charts to GHCR
+        run: |
+          for pkg in .charts-packages/*; do
+            helm push "${pkg}" "oci://${{ inputs.oci_repo }}"
+          done
+        if: ${{ inputs.push }}
