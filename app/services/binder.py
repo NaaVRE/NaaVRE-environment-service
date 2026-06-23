@@ -1,3 +1,4 @@
+from collections.abc import AsyncGenerator
 import json
 import logging
 
@@ -8,18 +9,19 @@ import httpx
 logger = logging.getLogger(__name__)
 
 
-async def watch_binder_and_sync_catalogue(
-        binder_ref: str,
-        ) -> None:
+async def stream_binder_build(binder_ref: str) -> AsyncGenerator[str, None]:
     """
-    Consumes the Binder SSE stream until the build completes or fails,
-    then upserts the record in the catalogue.
+    Proxies the Binder SSE stream to the caller, then upserts the catalogue.
+
+    Yields raw SSE lines (forwarded verbatim to the client). After the stream
+    ends — whether by completion, failure, or error — the catalogue is updated
+    if an image name was received.
     """
     binder_build_url = f"{config.BINDER_URL}/build/{binder_ref}"
     logger.info(f"Building {binder_build_url}")
     headers = {
         "Accept": "text/event-stream",
-        "Authorization": f"Bearer {config.BINDER_API_TOKEN}"
+        "Authorization": f"Bearer {config.BINDER_API_TOKEN}",
         }
     image_name: str | None = None
 
@@ -33,9 +35,12 @@ async def watch_binder_and_sync_catalogue(
                 response.raise_for_status()
 
                 async for raw_line in response.aiter_lines():
-                    logger.debug(f"Binder response: {raw_line}")
-                    # SSE lines look like:  data: {...}
-                    # Comment/heartbeat lines look like:  :heartbeat  — skip them.
+                    logger.debug(f"Binder SSE: {raw_line}")
+
+                    # Forward every line to the client (including heartbeats/comments).
+                    yield raw_line + "\n"
+
+                    # Skip non-data lines for internal processing.
                     if not raw_line or raw_line.startswith(":"):
                         continue
 
@@ -47,9 +52,7 @@ async def watch_binder_and_sync_catalogue(
                     try:
                         event = json.loads(payload)
                     except json.JSONDecodeError:
-                        logger.warning(
-                            "Binder SSE: could not parse line: %s", raw_line
-                            )
+                        logger.warning(f"Could not parse SSE line: {raw_line}")
                         continue
 
                     phase = event.get("phase")
@@ -69,17 +72,16 @@ async def watch_binder_and_sync_catalogue(
                             binder_ref,
                             image_name,
                             )
-                        # We have what we need; we can stop consuming the stream.
-                        break
 
     except httpx.HTTPStatusError as exc:
-        logger.error("Binder build request failed (%s): %s", binder_ref, exc)
+        msg = f"Binder build request failed ({binder_ref}): {exc}"
+        logger.error(msg)
+        yield f"data: {json.dumps({'phase': 'failed', 'message': msg})}\n\n"
         return
     except Exception as exc:
-        logger.exception(
-            "Unexpected error watching Binder build for %s: %s", binder_ref,
-            exc
-            )
+        msg = f"Unexpected error watching Binder build for {binder_ref}: {exc}"
+        logger.exception(msg)
+        yield f"data: {json.dumps({'phase': 'failed', 'message': msg})}\n\n"
         return
 
     if not image_name:

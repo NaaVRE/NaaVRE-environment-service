@@ -1,43 +1,31 @@
-from fastapi import APIRouter, BackgroundTasks
-from pydantic import BaseModel
-from ..services.binder import watch_binder_and_sync_catalogue
+from fastapi import APIRouter
+from fastapi.responses import StreamingResponse
+
+from ..services.binder import stream_binder_build
 
 router = APIRouter()
 
 
-class BuildAccepted(BaseModel):
-    binder_ref: str
-    message: str
-
-
 @router.post(
     "/build/gh/{org}/{repo}/{ref}",
-    response_model=BuildAccepted,
-    status_code=202,
     summary="Trigger a Binder build for a GitHub repository",
     )
 async def trigger_binder_build(
-        org: str,
-        repo: str,
-        ref: str,
-        background_tasks: BackgroundTasks,
-        ) -> BuildAccepted:
+        org: str, repo: str, ref: str
+        ) -> StreamingResponse:
     """
     Triggers a build on Binder for `gh/{org}/{repo}/{ref}`.
 
-    Returns immediately with the `binder_ref` the client can use to track
-    the build.  A background task watches the Binder SSE stream and, once
-    the build completes, upserts the record in the catalogue service.
+    Streams the Binder SSE events back to the client. Once the build
+    completes upserts the record to the catalogue.
     """
     binder_ref = f"gh/{org}/{repo}/{ref}"
 
-    # Fire-and-forget: watch the stream and sync the catalogue once done.
-    background_tasks.add_task(
-        watch_binder_and_sync_catalogue,
-        binder_ref,
-        )
-
-    return BuildAccepted(
-        binder_ref=binder_ref,
-        message="Build triggered. Use binder_ref to check status.",
+    return StreamingResponse(
+        stream_binder_build(binder_ref),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+            },
         )
