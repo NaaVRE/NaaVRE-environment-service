@@ -1,14 +1,32 @@
 import logging
 
-from app import config
 import httpx
+from pydantic import BaseModel
+
+from app import config
 
 logger = logging.getLogger(__name__)
 
+class APIListResponse[T](BaseModel):
+    count: int
+    next: int | None
+    previous: int | None
+    results: list[T]
 
-async def upsert_catalogue(binder_ref: str, docker_image: str) -> None:
-    """Create or update the binder-env record in the catalogue service."""
-    catalogue_base = f"{config.CATALOGUE_URL}/binder-envs"
+
+class BinderEnvironmentResponse(BaseModel):
+    url: str
+    binder_ref: str
+    container_image: str | None = None
+    pre_pull: bool
+
+
+async def upsert_binder_environment(
+        binder_ref: str,
+        container_image: str,
+        ) -> None:
+    """ Create or update a BinderEnvironment record in the catalogue """
+    catalogue_base = f"{config.CATALOGUE_URL}/binder-environments/"
 
     async with httpx.AsyncClient() as client:
         # Check whether a record already exists.
@@ -17,31 +35,55 @@ async def upsert_catalogue(binder_ref: str, docker_image: str) -> None:
                 catalogue_base, params={"binder_ref": binder_ref}
                 )
             get_resp.raise_for_status()
-            results = get_resp.json()
-        except Exception as exc:  # noqa: BLE001
+            existing_records = APIListResponse[
+                BinderEnvironmentResponse].model_validate(get_resp.json())
+        except Exception as exc:
             logger.exception(f"catalogue GET failed for {binder_ref}: {exc}")
             return
 
-        payload = {"binder_ref": binder_ref, "docker_image": docker_image}
+        new_record_payload = {
+            "binder_ref": binder_ref,
+            "container_image": container_image,
+            }
+        headers = {
+            "Authorization": f"Token {config.CATALOGUE_API_TOKEN}",
+            }
 
-        # If a record exists update it
-        if results:
-            existing = results[0]  # uniquely identified by binder_ref
-            record_id = existing.get("id", binder_ref)
+        # If no record exists, create one
+        if existing_records.count == 0:
             try:
-                put_resp = await client.put(
-                    f"{catalogue_base}/{record_id}", json=payload
+                post_resp = await client.post(
+                    catalogue_base,
+                    json=new_record_payload,
+                    headers=headers,
                     )
-                put_resp.raise_for_status()
-                logger.info(f"catalogue updated for {binder_ref}")
-            except Exception as exc:  # noqa: BLE001
-                logger.exception(f"catalogue PUT failed for {binder_ref}: {exc}")
-
-        # If no record create one
-        else:
-            try:
-                post_resp = await client.post(catalogue_base, json=payload)
                 post_resp.raise_for_status()
                 logger.info(f"catalogue record created for {binder_ref}")
             except Exception as exc:
-                logger.exception(f"catalogue POST failed for {binder_ref}: {exc}")
+                logger.exception(
+                    f"catalogue creation failed for {binder_ref}: {exc}"
+                    )
+
+        # If one record exist, update it
+        elif existing_records.count == 1:
+            existing_record = existing_records.results[0]
+            try:
+                put_resp = await client.put(
+                    existing_record.url,
+                    json=new_record_payload,
+                    headers=headers,
+                    )
+                put_resp.raise_for_status()
+                logger.info(f"catalogue updated for {binder_ref}")
+            except Exception as exc:
+                logger.exception(
+                    f"catalogue update failed for {binder_ref}: {exc}"
+                    )
+
+        # Having more than one record should be impossible, because binder_ref
+        # is unique in the catalogue.
+        else:
+            logger.exception(
+                f"The catalogue has {existing_records.count} items for {binder_ref}."
+                "This should not be possible."
+                )

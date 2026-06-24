@@ -5,7 +5,7 @@ from fastapi.responses import StreamingResponse
 from typing_extensions import AsyncGenerator
 
 from ..services.binder import BinderBuildEvent, stream_binder_build
-from ..services.catalogue import upsert_catalogue
+from ..services.catalogue import upsert_binder_environment
 
 router = APIRouter()
 
@@ -19,7 +19,7 @@ async def build_env(binder_ref: str) -> AsyncGenerator[str, None]:
 
     image_name = parsed_event.imageName if parsed_event else None
     if image_name:
-        await upsert_catalogue(binder_ref, image_name)
+        await upsert_binder_environment(binder_ref, image_name)
     else:
         logger.warning(
             "No imageName received for {binder_ref}. Skipping catalogue upsert."

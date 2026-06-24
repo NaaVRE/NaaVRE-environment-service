@@ -19,3 +19,5 @@ BINDER_URL: str = os.environ["BINDER_URL"].rstrip("/")
 #             - "access:services!service=binder"
 BINDER_API_TOKEN: str = os.environ["BINDER_API_TOKEN"]
 CATALOGUE_URL: str  = os.environ["CATALOGUE_URL"].rstrip("/")
+# This API token can be created in the catalogue admin console
+CATALOGUE_API_TOKEN: str  = os.environ["CATALOGUE_API_TOKEN"]
