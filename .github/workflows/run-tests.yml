@@ -36,7 +36,7 @@ jobs:
         chart:
           - minikube_tests/charts/argo-workflows-0.33.1-Chart.yaml
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Install pytest
         run: | 
