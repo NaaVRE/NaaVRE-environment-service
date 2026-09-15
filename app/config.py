@@ -17,7 +17,12 @@ BINDER_URL: str = os.environ["BINDER_URL"].rstrip("/")
 #             - environment-service
 #           scopes:
 #             - "access:services!service=binder"
+#
+# It is exposed through the NaaVRE-helm values at
+# global.secrets.naavreEnvironmentService.jupyterhubApiToken
 BINDER_API_TOKEN: str = os.environ["BINDER_API_TOKEN"]
 CATALOGUE_URL: str  = os.environ["CATALOGUE_URL"].rstrip("/")
-# This API token can be created in the catalogue admin console
+# This API token is created by the catalogue service helm chart.
+# It is exposed through the NaaVRE-helm values at
+# global.secrets.naavreCatalogueService.auth.naavreEnvironmentSaToken
 CATALOGUE_API_TOKEN: str  = os.environ["CATALOGUE_API_TOKEN"]

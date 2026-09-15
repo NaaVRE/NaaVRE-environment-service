@@ -2,6 +2,11 @@
 
 ## Running locally
 
+TODO: describe the following dev setup:
+
+- Setup https://github.com/NaaVRE/NaaVRE-dev-vm
+- Deploy https://github.com/NaaVRE/NaaVRE-helm/tree/poc_binderhub
+
 Install dependencies:
 
 ```shell
@@ -13,6 +18,7 @@ pip install -r requirements.txt
 Run the dev server
 
 ```shell
+while read env; do export $env; done < .env.dev
 fastapi dev app/main.py
 ```
 
