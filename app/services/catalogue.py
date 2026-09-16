@@ -28,7 +28,7 @@ async def upsert_binder_environment(
     """ Create or update a BinderEnvironment record in the catalogue """
     catalogue_base = f"{config.CATALOGUE_URL}/binder-environments/"
 
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(verify=config.VERIFY_SSL) as client:
         # Check whether a record already exists.
         try:
             get_resp = await client.get(
