@@ -5,7 +5,7 @@
 TODO: describe the following dev setup:
 
 - Setup https://github.com/NaaVRE/NaaVRE-dev-vm
-- Deploy https://github.com/NaaVRE/NaaVRE-helm/tree/poc_binderhub
+- Deploy https://github.com/NaaVRE/NaaVRE-helm/tree/poc_binderhub with custom prefix and access token for `binderhub.registry`
 
 Install dependencies:
 
