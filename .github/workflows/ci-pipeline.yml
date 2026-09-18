@@ -1,0 +1,34 @@
+name: make
+on:
+  release:
+    types: [published]
+  push:
+    branches:
+      - '**'
+    tags-ignore:
+      - '**'
+  schedule:
+    - cron: '0 4 5,25 * *'
+
+jobs:
+  lint:
+    uses: ./.github/workflows/lint.yml
+
+  test:
+    uses: ./.github/workflows/run-tests.yml
+
+  call-build-container:
+    needs: [lint, test]
+    uses: ./.github/workflows/build-container.yml
+    with:
+      oci_tag: ghcr.io/naavre/naavre-environment-service
+      version: ${{ github.ref_type == 'tag' && github.ref_name || github.sha }}
+      push: ${{ github.event_name == 'release' }}
+
+  call-helm-chart-release:
+    needs: [lint, test]
+    uses: ./.github/workflows/helm-chart-release.yml
+    with:
+      oci_repo: ghcr.io/naavre/charts
+      version: ${{ github.ref_type == 'tag' && github.ref_name || github.sha }}
+      push: ${{ github.event_name == 'release' }}
