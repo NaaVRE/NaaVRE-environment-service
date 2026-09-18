@@ -1,4 +1,5 @@
-name: make
+name: CI pipeline
+
 on:
   release:
     types: [published]
