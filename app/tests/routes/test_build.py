@@ -41,7 +41,7 @@ def catalogue_list_response(*, results: list[dict]) -> dict:
 
 
 @respx.mock
-def test_build_streams_events_and_creates_catalogue_record():
+def test_build_creates_catalogue_record():
     binder_ref = "gh/acme/demo/main"
     image_name = "registry.test/acme/demo:abc123"
 
@@ -154,7 +154,7 @@ def test_build_updates_existing_catalogue_record():
 
 
 @respx.mock
-def test_failed_build_is_streamed_and_does_not_upsert_catalogue() -> None:
+def test_failed_build_does_not_upsert_catalogue() -> None:
     binder_ref = "gh/acme/demo/broken"
 
     binder_get = respx.get(f"{BINDER_URL}/build/{binder_ref}").mock(
@@ -184,16 +184,211 @@ def test_failed_build_is_streamed_and_does_not_upsert_catalogue() -> None:
 
 
 @respx.mock
-def test_binder_http_error_becomes_a_failed_sse_event_and_skips_catalogue() -> None:
+def test_binder_unknown_event() -> None:
+    binder_ref = "gh/acme/demo/unknown_event"
+    binder_get = respx.get(f"{BINDER_URL}/build/{binder_ref}").mock(
+        return_value=httpx.Response(
+            200,
+            stream=mock_stream(
+                 {"phase": "unknown", "message": False},
+                ),
+            )
+        )
+
+    with TestClient(app) as client:
+        response = client.post(f"/build/{binder_ref}")
+
+    assert binder_get.called
+    assert response.status_code == 200
+    assert '"phase": "unknown", "message": false' in response.text
+
+
+@respx.mock
+def test_binder_http_status_error() -> None:
     binder_ref = "gh/acme/demo/missing"
     binder_get = respx.get(f"{BINDER_URL}/build/{binder_ref}").respond(
         404, json={"detail": "Not found"}
         )
 
     with TestClient(app) as client:
-        response = client.post("/build/gh/acme/demo/missing")
+        response = client.post(f"/build/{binder_ref}")
 
     assert binder_get.called
     assert response.status_code == 200
     assert '"phase": "failed"' in response.text
     assert f"Binder build request failed ({binder_ref})" in response.text
+
+
+@respx.mock
+def test_binder_connect_error() -> None:
+    binder_ref = "gh/acme/demo/connect_error"
+    binder_get = respx.get(f"{BINDER_URL}/build/{binder_ref}").mock(side_effect=httpx.ConnectError)
+
+    with TestClient(app) as client:
+        response = client.post(f"/build/{binder_ref}")
+
+    assert binder_get.called
+    assert response.status_code == 200
+    assert '"phase": "failed"' in response.text
+    assert f"Unexpected error watching Binder build for {binder_ref}" in response.text
+
+
+@respx.mock
+def test_catalogue_get_error():
+    binder_ref = "gh/acme/demo/main"
+    image_name = "registry.test/acme/demo:abc123"
+
+    respx.get(f"{BINDER_URL}/build/{binder_ref}").mock(
+        return_value=httpx.Response(
+            200,
+            stream=mock_stream(
+                {
+                    "phase": "built",
+                    "message": "Mock build complete",
+                    "imageName": image_name,
+                    },
+                ),
+            )
+        )
+    catalogue_get = respx.get(
+        f"{CATALOGUE_URL}/binder-environments/",
+        params={"binder_ref": binder_ref},
+        ).mock(side_effect=httpx.ConnectError)
+
+    with TestClient(app) as client:
+        response = client.post(f"/build/{binder_ref}")
+
+    assert response.status_code == 200
+    assert '"phase": "built"' in response.text
+    assert catalogue_get.called
+
+
+@respx.mock
+def test_catalogue_get_inconsistent():
+    binder_ref = "gh/acme/demo/main"
+    image_name = "registry.test/acme/demo:abc123"
+
+    respx.get(f"{BINDER_URL}/build/{binder_ref}").mock(
+        return_value=httpx.Response(
+            200,
+            stream=mock_stream(
+                {
+                    "phase": "built",
+                    "message": "Mock build complete",
+                    "imageName": image_name,
+                    },
+                ),
+            )
+        )
+    catalogue_get = respx.get(
+        f"{CATALOGUE_URL}/binder-environments/",
+        params={"binder_ref": binder_ref},
+        ).respond(
+        200,
+        json=catalogue_list_response(
+            results=[
+                {
+                    "url": f"${CATALOGUE_URL}/binder-environments/1",
+                    "binder_ref": binder_ref,
+                    "container_image": "",
+                    "pre_pull": False,
+                    },
+                {
+                    "url": f"${CATALOGUE_URL}/binder-environments/2",
+                    "binder_ref": binder_ref,
+                    "container_image": "",
+                    "pre_pull": False,
+                    }
+                ]
+            ),
+        )
+
+    with TestClient(app) as client:
+        response = client.post(f"/build/{binder_ref}")
+
+    assert response.status_code == 200
+    assert '"phase": "built"' in response.text
+    assert catalogue_get.called
+
+@respx.mock
+def test_catalogue_post_error():
+    binder_ref = "gh/acme/demo/main"
+    image_name = "registry.test/acme/demo:abc123"
+
+    respx.get(f"{BINDER_URL}/build/{binder_ref}").mock(
+        return_value=httpx.Response(
+            200,
+            stream=mock_stream(
+                {
+                    "phase": "built",
+                    "message": "Mock build complete",
+                    "imageName": image_name,
+                    },
+                ),
+            )
+        )
+    catalogue_get = respx.get(
+        f"{CATALOGUE_URL}/binder-environments/",
+        params={"binder_ref": binder_ref},
+        ).respond(200, json=catalogue_list_response(results=[]))
+    catalogue_post = respx.post(
+        f"{CATALOGUE_URL}/binder-environments/",
+        headers={"authorization": f"Token {CATALOGUE_API_TOKEN}"},
+        ).mock(side_effect=httpx.ConnectError)
+
+
+    with TestClient(app) as client:
+        response = client.post(f"/build/{binder_ref}")
+
+    assert response.status_code == 200
+    assert '"phase": "built"' in response.text
+    assert catalogue_get.called
+
+
+@respx.mock
+def test_catalogue_put_error():
+    binder_ref = "gh/acme/demo/main"
+    image_name = "registry.test/acme/demo:abc123"
+    record_url = (f"{CATALOGUE_URL}/binder-environments/"
+                  f"cb6d1a6e-cea6-47c3-831c-d8e8efd81c7a/")
+
+    respx.get(f"{BINDER_URL}/build/{binder_ref}").mock(
+        return_value=httpx.Response(
+            200,
+            stream=mock_stream(
+                {
+                    "phase": "built",
+                    "message": "Mock build complete",
+                    "imageName": image_name,
+                    },
+                ),
+            )
+        )
+    respx.get(
+        f"{CATALOGUE_URL}/binder-environments/",
+        params={"binder_ref": binder_ref},
+        ).respond(
+        200,
+        json=catalogue_list_response(
+            results=[
+                {
+                    "url": record_url,
+                    "binder_ref": binder_ref,
+                    "container_image": "",
+                    "pre_pull": False,
+                    }
+                ]
+            ),
+        )
+    catalogue_put = respx.put(
+        record_url,
+        headers={"authorization": f"Token {CATALOGUE_API_TOKEN}"},
+        ).mock(side_effect=httpx.ConnectError)
+
+
+    with TestClient(app) as client:
+        response = client.post(f"/build/{binder_ref}")
+
+    assert response.status_code == 200
+    assert '"phase": "built"' in response.text
+    assert catalogue_put.called
