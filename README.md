@@ -29,13 +29,13 @@ uv run coverage report
 ## Build Docker image
 
 ```shell
-docker build . -t naavre-environment-service:dev
+docker build . -f docker/Dockerfile -t naavre-environment-service:dev
 ```
 
 To run it:
 
 ```shell
-docker run -p 127.0.0.1:8000:8000 naavre-environment-service:dev
+docker run -p 127.0.0.1:8000:8000 --env-file .env.dev naavre-environment-service:dev
 ```
 
 and open http://127.0.0.1:8000/docs
