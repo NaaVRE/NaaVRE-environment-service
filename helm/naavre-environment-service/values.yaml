@@ -166,3 +166,7 @@ conf:
 env:
   DEBUG: "false"
   VERIFY_SSL: "true"
+  BINDER_URL:
+  BINDER_API_TOKEN:
+  CATALOGUE_URL:
+  CATALOGUE_API_TOKEN:

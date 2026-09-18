@@ -13,4 +13,8 @@ ingress:
 conf:
   rootPath: /my-root-path
 
-env: {}
+env:
+  BINDER_URL: "https://example.com/binderhub/"
+  BINDER_API_TOKEN: "binder-token"
+  CATALOGUE_URL: "https://example.com/naavre-catalogue-service/"
+  CATALOGUE_API_TOKEN: "catalogue-token"
