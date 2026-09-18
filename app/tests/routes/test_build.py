@@ -175,7 +175,7 @@ def test_failed_build_does_not_upsert_catalogue() -> None:
         response = client.post(f"/build/{binder_ref}")
 
     assert binder_get.called
-    assert catalogue_get.called == False
+    assert not catalogue_get.called
     assert response.status_code == 200
     assert response.text == ''.join((
         'data: {"phase": "building", "message": "Starting mock build"}\n\n'
@@ -222,7 +222,9 @@ def test_binder_http_status_error() -> None:
 @respx.mock
 def test_binder_connect_error() -> None:
     binder_ref = "gh/acme/demo/connect_error"
-    binder_get = respx.get(f"{BINDER_URL}/build/{binder_ref}").mock(side_effect=httpx.ConnectError)
+    binder_get = respx.get(f"{BINDER_URL}/build/{binder_ref}").mock(
+        side_effect=httpx.ConnectError
+        )
 
     with TestClient(app) as client:
         response = client.post(f"/build/{binder_ref}")
@@ -230,7 +232,8 @@ def test_binder_connect_error() -> None:
     assert binder_get.called
     assert response.status_code == 200
     assert '"phase": "failed"' in response.text
-    assert f"Unexpected error watching Binder build for {binder_ref}" in response.text
+    assert (f"Unexpected error watching Binder build for {binder_ref}"
+            in response.text)
 
 
 @respx.mock
@@ -310,6 +313,7 @@ def test_catalogue_get_inconsistent():
     assert '"phase": "built"' in response.text
     assert catalogue_get.called
 
+
 @respx.mock
 def test_catalogue_post_error():
     binder_ref = "gh/acme/demo/main"
@@ -331,11 +335,10 @@ def test_catalogue_post_error():
         f"{CATALOGUE_URL}/binder-environments/",
         params={"binder_ref": binder_ref},
         ).respond(200, json=catalogue_list_response(results=[]))
-    catalogue_post = respx.post(
+    respx.post(
         f"{CATALOGUE_URL}/binder-environments/",
         headers={"authorization": f"Token {CATALOGUE_API_TOKEN}"},
         ).mock(side_effect=httpx.ConnectError)
-
 
     with TestClient(app) as client:
         response = client.post(f"/build/{binder_ref}")
@@ -384,7 +387,6 @@ def test_catalogue_put_error():
         record_url,
         headers={"authorization": f"Token {CATALOGUE_API_TOKEN}"},
         ).mock(side_effect=httpx.ConnectError)
-
 
     with TestClient(app) as client:
         response = client.post(f"/build/{binder_ref}")

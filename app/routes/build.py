@@ -22,7 +22,8 @@ async def build_env(binder_ref: str) -> AsyncGenerator[str, None]:
         await upsert_binder_environment(binder_ref, image_name)
     else:
         logger.warning(
-            "No imageName received for {binder_ref}. Skipping catalogue upsert."
+            "No imageName received for {binder_ref}. "
+            "Skipping catalogue upsert."
             )
 
 

@@ -7,6 +7,7 @@ from app import config
 
 logger = logging.getLogger(__name__)
 
+
 class APIListResponse[T](BaseModel):
     count: int
     next: int | None
@@ -84,6 +85,6 @@ async def upsert_binder_environment(
         # is unique in the catalogue.
         else:
             logger.exception(
-                f"The catalogue has {existing_records.count} items for {binder_ref}."
-                "This should not be possible."
+                f"The catalogue has {existing_records.count} items for "
+                f"{binder_ref}. This should not be possible."
                 )
