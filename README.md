@@ -10,16 +10,20 @@ TODO: describe the following dev setup:
 Install dependencies:
 
 ```shell
-virtualenv venv
-. venv/bin/activate
-pip install -r requirements.txt
+uv sync --locked --dev
 ```
 
 Run the dev server
 
 ```shell
-while read env; do export $env; done < .env.dev
-fastapi dev app/main.py
+uv run --env-file .env.dev fastapi dev
+```
+
+Running tests and coverage
+
+```shell
+uv run coverage run -m pytest app/tests/ --log-cli-level=DEBUG
+uv run coverage report
 ```
 
 ## Build Docker image

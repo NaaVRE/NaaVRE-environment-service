@@ -1,0 +1,21 @@
+[project]
+name = "NaaVRE-environment-service"
+version = "0.1.0"
+description = ""
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "fastapi[standard]>=0.141.1",
+    "httpx>=0.28.1",
+]
+
+[dependency-groups]
+dev = [
+    "coverage>=7.16.1",
+    "flake8>=7.3.0",
+    "pytest>=9.1.1",
+    "respx>=0.23.1",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
