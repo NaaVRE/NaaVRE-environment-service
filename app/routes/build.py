@@ -1,9 +1,12 @@
+from typing import Annotated
 import logging
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 from typing_extensions import AsyncGenerator
 
+from ..dependencies import require_auth
+from ..models.auth import User
 from ..services.binder import BinderBuildEvent, stream_binder_build
 from ..services.catalogue import upsert_binder_environment
 
@@ -32,7 +35,8 @@ async def build_env(binder_ref: str) -> AsyncGenerator[str, None]:
     summary="Trigger a Binder build for a GitHub repository",
     )
 async def trigger_binder_build(
-        org: str, repo: str, ref: str
+        org: str, repo: str, ref: str,
+        user: Annotated[User, Depends(require_auth)]
         ) -> StreamingResponse:
     """
     Triggers a build on Binder for `gh/{org}/{repo}/{ref}`.

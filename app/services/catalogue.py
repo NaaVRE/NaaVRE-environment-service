@@ -3,7 +3,7 @@ import logging
 import httpx
 from pydantic import BaseModel
 
-from app import config
+from app import env
 
 logger = logging.getLogger(__name__)
 
@@ -27,9 +27,9 @@ async def upsert_binder_environment(
         container_image: str,
         ) -> None:
     """ Create or update a BinderEnvironment record in the catalogue """
-    catalogue_base = f"{config.CATALOGUE_URL}/binder-environments/"
+    catalogue_base = f"{env.CATALOGUE_URL}/binder-environments/"
 
-    async with httpx.AsyncClient(verify=config.VERIFY_SSL) as client:
+    async with httpx.AsyncClient(verify=env.VERIFY_SSL) as client:
         # Check whether a record already exists.
         try:
             get_resp = await client.get(
@@ -47,7 +47,7 @@ async def upsert_binder_environment(
             "container_image": container_image,
             }
         headers = {
-            "Authorization": f"Token {config.CATALOGUE_API_TOKEN}",
+            "Authorization": f"Token {env.CATALOGUE_API_TOKEN}",
             }
 
         # If no record exists, create one

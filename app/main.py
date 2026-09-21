@@ -1,16 +1,19 @@
 import logging
 
-from app import config
-from app.routes.build import router as build_router
 from fastapi import FastAPI
 
-if config.DEBUG:
+from app import env
+from app.routes.build import router as build_router
+from app.routes.me import router as me_router
+
+if env.DEBUG:
     logging.basicConfig(level=logging.DEBUG)
 else:
     logging.basicConfig(level=logging.INFO)
 
 app = FastAPI(
-    root_path=config.ROOT_PATH
+    root_path=env.ROOT_PATH
     )
 
 app.include_router(build_router)
+app.include_router(me_router)

@@ -28,3 +28,11 @@ CATALOGUE_URL: str = os.environ["CATALOGUE_URL"].rstrip("/")
 # It is exposed through the NaaVRE-helm values at
 # global.secrets.naavreCatalogueService.auth.naavreEnvironmentSaToken
 CATALOGUE_API_TOKEN: str = os.environ["CATALOGUE_API_TOKEN"]
+
+CONFIG_FILE_PATH = os.getenv(
+    'CONFIG_FILE_PATH',
+    os.path.join(
+        os.path.dirname(os.path.realpath(__file__)),
+        'configuration.json'
+        )
+    )

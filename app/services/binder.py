@@ -7,7 +7,7 @@ import httpx
 import pydantic
 from pydantic import BaseModel
 
-from app import config
+from app import env
 
 logger = logging.getLogger(__name__)
 
@@ -23,15 +23,15 @@ async def stream_binder_build(binder_ref: str) -> AsyncGenerator[
     """
     Proxies the Binder SSE stream to the caller, then upserts the catalogue.
     """
-    binder_build_url = f"{config.BINDER_URL}/build/{binder_ref}"
+    binder_build_url = f"{env.BINDER_URL}/build/{binder_ref}"
     logger.info(f"Building {binder_build_url}")
     headers = {
         "Accept": "text/event-stream",
-        "Authorization": f"Bearer {config.BINDER_API_TOKEN}",
+        "Authorization": f"Bearer {env.BINDER_API_TOKEN}",
         }
     try:
         async with httpx.AsyncClient(
-                timeout=None, verify=config.VERIFY_SSL
+                timeout=None, verify=env.VERIFY_SSL
                 ) as client:
             async with client.stream(
                     "GET", binder_build_url, headers=headers
