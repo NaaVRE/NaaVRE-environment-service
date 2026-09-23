@@ -1,0 +1,17 @@
+{
+  "users": [
+    {
+      "id": "test-user",
+      "auth": [
+        {
+          "method": "token",
+          "token": "test-token"
+        },
+        {
+          "method": "token",
+          "token": "other-test-token"
+        }
+      ]
+    }
+  ]
+}
