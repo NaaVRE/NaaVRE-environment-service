@@ -1,0 +1,281 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "naavre-environment-service Helm Values",
+  "type": "object",
+  "additionalProperties": false,
+  "definitions": {
+    "authMethodToken": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["method", "token"],
+      "properties": {
+        "method": { "type": "string", "enum": ["token"] },
+        "token": { "type": "string" }
+      }
+    },
+    "authMethod": {
+      "type": "object",
+      "required": ["method"],
+      "properties": {
+        "method": { "type": "string" }
+      },
+      "oneOf": [
+        { "$ref": "#/definitions/authMethodToken" }
+      ]
+    }
+  },
+  "properties": {
+    "replicaCount": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1
+    },
+    "image": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "repository": { "type": "string" },
+        "pullPolicy": {
+          "type": "string",
+          "enum": ["Always", "IfNotPresent", "Never"],
+          "default": "IfNotPresent"
+        },
+        "tag": { "type": "string", "default": "" }
+      },
+      "required": ["repository", "pullPolicy"]
+    },
+    "imagePullSecrets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" }
+        },
+        "required": ["name"]
+      }
+    },
+    "nameOverride": { "type": "string", "default": "" },
+    "fullnameOverride": { "type": "string", "default": "" },
+    "serviceAccount": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "create": { "type": "boolean", "default": true },
+        "automount": { "type": "boolean", "default": true },
+        "annotations": { "type": "object", "additionalProperties": { "type": "string" } },
+        "name": { "type": "string", "default": "" }
+      }
+    },
+    "podAnnotations": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "podLabels": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "podSecurityContext": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "securityContext": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "service": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["ClusterIP", "NodePort", "LoadBalancer", "ExternalName"],
+          "default": "ClusterIP"
+        },
+        "port": { "type": "integer", "default": 8000 }
+      },
+      "required": ["type", "port"]
+    },
+    "ingress": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean", "default": false },
+        "className": { "type": "string", "default": "" },
+        "annotations": { "type": "object", "additionalProperties": { "type": "string" } },
+        "hosts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "host": { "type": "string" },
+              "paths": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "path": { "type": "string" },
+                    "pathType": {
+                      "type": "string",
+                      "enum": ["Exact", "Prefix", "ImplementationSpecific"]
+                    }
+                  },
+                  "required": ["path", "pathType"]
+                }
+              }
+            },
+            "required": ["host", "paths"]
+          }
+        },
+        "tls": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "secretName": { "type": "string" },
+              "hosts": { "type": "array", "items": { "type": "string" } }
+            },
+            "required": ["secretName", "hosts"]
+          }
+        }
+      }
+    },
+    "httpRoute": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean", "default": false },
+        "annotations": { "type": "object", "additionalProperties": { "type": "string" } },
+        "parentRefs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "sectionName": { "type": "string" },
+              "namespace": { "type": "string" }
+            },
+            "required": ["name"]
+          }
+        },
+        "hostnames": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "rules": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      }
+    },
+    "resources": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "limits": {
+          "type": "object",
+          "properties": {
+            "cpu": { "type": "string" },
+            "memory": { "type": "string" }
+          }
+        },
+        "requests": {
+          "type": "object",
+          "properties": {
+            "cpu": { "type": "string" },
+            "memory": { "type": "string" }
+          }
+        }
+      }
+    },
+    "livenessProbe": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "readinessProbe": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "autoscaling": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean", "default": false },
+        "minReplicas": { "type": "integer", "minimum": 1, "default": 1 },
+        "maxReplicas": { "type": "integer", "minimum": 1, "default": 100 },
+        "targetCPUUtilizationPercentage": { "type": "integer", "minimum": 1, "maximum": 100 },
+        "targetMemoryUtilizationPercentage": { "type": "integer", "minimum": 1, "maximum": 100 }
+      }
+    },
+    "volumes": {
+      "type": "array",
+      "items": { "type": "object", "additionalProperties": true }
+    },
+    "volumeMounts": {
+      "type": "array",
+      "items": { "type": "object", "additionalProperties": true }
+    },
+    "nodeSelector": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "tolerations": {
+      "type": "array",
+      "items": { "type": "object", "additionalProperties": true }
+    },
+    "affinity": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "conf": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "rootPath": {
+          "type": "string",
+          "default": "/"
+        },
+        "configuration": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "users": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["id", "auth"],
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "auth": {
+                    "type": "array",
+                    "items": { "$ref": "#/definitions/authMethod" }
+                  }
+                }
+              }
+            }
+          },
+          "required": ["users"]
+        }
+      },
+      "required": ["rootPath", "configuration"]
+    },
+    "env": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "DEBUG": { "type": "string", "enum": ["true", "false"], "default": "false" },
+        "VERIFY_SSL": { "type": "string", "enum": ["true", "false"], "default": "true" },
+        "BINDER_URL": { "type": ["string" ] },
+        "BINDER_API_TOKEN": { "type": ["string" ] },
+        "CATALOGUE_URL": { "type": ["string" ] },
+        "CATALOGUE_API_TOKEN": { "type": ["string" ] }
+      },
+      "required": ["BINDER_URL", "BINDER_API_TOKEN", "CATALOGUE_URL", "CATALOGUE_API_TOKEN"]
+    }
+  }
+}

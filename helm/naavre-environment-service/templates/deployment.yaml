@@ -43,6 +43,8 @@ spec:
           env:
             - name: ROOT_PATH
               value: "{{ .Values.conf.rootPath }}"
+            - name: CONFIG_FILE_URL
+              value: "/configuration.json"
             {{- range $k, $v := .Values.env}}
             - name: {{$k | quote}}
               value: {{$v | quote}}
@@ -63,14 +65,20 @@ spec:
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          {{- with .Values.volumeMounts }}
           volumeMounts:
-            {{- toYaml . | nindent 12 }}
-          {{- end }}
-      {{- with .Values.volumes }}
+            - name: config-volume
+              mountPath: /configuration.json
+              subPath: configuration.json
+            {{- with .Values.volumeMounts}}
+            {{- toYaml . | nindent 12}}
+            {{- end}}
       volumes:
+        - name: config-volume
+          configMap:
+            name: {{include "naavre-environment-service.fullname" .}}
+        {{- with .Values.volumes }}
         {{- toYaml . | nindent 8 }}
-      {{- end }}
+        {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

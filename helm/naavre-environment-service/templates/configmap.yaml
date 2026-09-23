@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{include "naavre-environment-service.fullname" .}}
+  labels:
+    {{- include "naavre-environment-service.labels" . | nindent 4}}
+
+data:
+  configuration.json: |
+    {{- .Values.conf.configuration | toJson | nindent 4 }}

@@ -162,6 +162,12 @@ affinity: {}
 
 conf:
   rootPath: /
+  configuration:
+    users: []
+      # - id: example-user
+      #   auth:
+      #     - method: token
+      #       token: example-token
 
 env:
   DEBUG: "false"
