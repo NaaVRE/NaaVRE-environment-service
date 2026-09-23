@@ -12,14 +12,6 @@ VALID_TOKEN = 'test-token'
 OTHER_VALID_TOKEN = 'other-test-token'
 
 
-@pytest.fixture(autouse=True)
-def clear_config_cache():
-    """Ensure load_config cache is cleared between tests."""
-    load_config.cache_clear()
-    yield
-    load_config.cache_clear()
-
-
 class ConfigurableClientMixin:
     conf_filename: str
     _client: TestClient

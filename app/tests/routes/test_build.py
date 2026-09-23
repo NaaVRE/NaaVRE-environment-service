@@ -14,6 +14,7 @@ BINDER_URL = "https://binder.test"
 CATALOGUE_URL = "https://catalogue.test"
 BINDER_API_TOKEN = "binder-test-token"
 CATALOGUE_API_TOKEN = "catalogue-test-token"
+TOKEN = "test-token"
 
 
 class MockStreamingResponse(httpx.AsyncByteStream):
@@ -78,7 +79,10 @@ def test_build_creates_catalogue_record():
         )
 
     with TestClient(app) as client:
-        response = client.post(f"/build/{binder_ref}")
+        response = client.post(
+            f"/build/{binder_ref}",
+            headers={"Authorization": f"Bearer {TOKEN}"}
+            )
 
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("text/event-stream")
@@ -142,7 +146,10 @@ def test_build_updates_existing_catalogue_record():
         ).respond(200, json={})
 
     with TestClient(app) as client:
-        response = client.post(f"/build/{binder_ref}")
+        response = client.post(
+            f"/build/{binder_ref}",
+            headers={"Authorization": f"Bearer {TOKEN}"}
+            )
 
     assert response.status_code == 200
     assert '"phase": "built"' in response.text
@@ -172,7 +179,10 @@ def test_failed_build_does_not_upsert_catalogue() -> None:
         ).respond(200, json=catalogue_list_response(results=[]))
 
     with TestClient(app) as client:
-        response = client.post(f"/build/{binder_ref}")
+        response = client.post(
+            f"/build/{binder_ref}",
+            headers={"Authorization": f"Bearer {TOKEN}"}
+            )
 
     assert binder_get.called
     assert not catalogue_get.called
@@ -196,7 +206,10 @@ def test_binder_unknown_event() -> None:
         )
 
     with TestClient(app) as client:
-        response = client.post(f"/build/{binder_ref}")
+        response = client.post(
+            f"/build/{binder_ref}",
+            headers={"Authorization": f"Bearer {TOKEN}"}
+            )
 
     assert binder_get.called
     assert response.status_code == 200
@@ -211,7 +224,10 @@ def test_binder_http_status_error() -> None:
         )
 
     with TestClient(app) as client:
-        response = client.post(f"/build/{binder_ref}")
+        response = client.post(
+            f"/build/{binder_ref}",
+            headers={"Authorization": f"Bearer {TOKEN}"}
+            )
 
     assert binder_get.called
     assert response.status_code == 200
@@ -227,7 +243,10 @@ def test_binder_connect_error() -> None:
         )
 
     with TestClient(app) as client:
-        response = client.post(f"/build/{binder_ref}")
+        response = client.post(
+            f"/build/{binder_ref}",
+            headers={"Authorization": f"Bearer {TOKEN}"}
+            )
 
     assert binder_get.called
     assert response.status_code == 200
@@ -259,7 +278,10 @@ def test_catalogue_get_error():
         ).mock(side_effect=httpx.ConnectError)
 
     with TestClient(app) as client:
-        response = client.post(f"/build/{binder_ref}")
+        response = client.post(
+            f"/build/{binder_ref}",
+            headers={"Authorization": f"Bearer {TOKEN}"}
+            )
 
     assert response.status_code == 200
     assert '"phase": "built"' in response.text
@@ -307,7 +329,10 @@ def test_catalogue_get_inconsistent():
         )
 
     with TestClient(app) as client:
-        response = client.post(f"/build/{binder_ref}")
+        response = client.post(
+            f"/build/{binder_ref}",
+            headers={"Authorization": f"Bearer {TOKEN}"}
+            )
 
     assert response.status_code == 200
     assert '"phase": "built"' in response.text
@@ -341,7 +366,10 @@ def test_catalogue_post_error():
         ).mock(side_effect=httpx.ConnectError)
 
     with TestClient(app) as client:
-        response = client.post(f"/build/{binder_ref}")
+        response = client.post(
+            f"/build/{binder_ref}",
+            headers={"Authorization": f"Bearer {TOKEN}"}
+            )
 
     assert response.status_code == 200
     assert '"phase": "built"' in response.text
@@ -389,7 +417,10 @@ def test_catalogue_put_error():
         ).mock(side_effect=httpx.ConnectError)
 
     with TestClient(app) as client:
-        response = client.post(f"/build/{binder_ref}")
+        response = client.post(
+            f"/build/{binder_ref}",
+            headers={"Authorization": f"Bearer {TOKEN}"}
+            )
 
     assert response.status_code == 200
     assert '"phase": "built"' in response.text
