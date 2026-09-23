@@ -10,6 +10,7 @@ router = APIRouter()
 
 logger = logging.getLogger(__name__)
 
+
 @router.get("/me")
 def protected_route(user: Annotated[User, Depends(require_auth)]) -> dict:
     return {"user": {"id": user.id}}
