@@ -54,10 +54,13 @@ class Env:
 
     @property
     def CONFIG_FILE_PATH(self) -> str:
-        return os.path.join(
-            os.path.dirname(os.path.realpath(__file__)),
-            os.getenv(
-                'CONFIG_FILE_PATH',
-                'configuration.json'
-                )
+        filename = os.getenv(
+            'CONFIG_FILE_PATH',
+            './configuration.json'
             )
+        if not os.path.isabs(filename):
+            filename = os.path.join(
+                os.path.dirname(os.path.realpath(__file__)),
+                filename
+                )
+        return filename

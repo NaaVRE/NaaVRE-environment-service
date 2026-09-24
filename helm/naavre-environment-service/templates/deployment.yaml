@@ -43,7 +43,7 @@ spec:
           env:
             - name: ROOT_PATH
               value: "{{ .Values.conf.rootPath }}"
-            - name: CONFIG_FILE_URL
+            - name: CONFIG_FILE_PATH
               value: "/configuration.json"
             {{- range $k, $v := .Values.env}}
             - name: {{$k | quote}}
