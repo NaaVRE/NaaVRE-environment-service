@@ -155,7 +155,7 @@ async def sync_image_puller_daemonset(
         raise
 
     logger.info(
-        f"{sync_outcome.capitalize()} {env.IMAGE_PULLER_NAME} daemonset ",
+        f"{sync_outcome.capitalize()} {env.IMAGE_PULLER_NAME} daemonset "
         f"with {len(daemonset.spec.template.spec.init_containers)} "
         "image(s) to pre-pull"
         )
