@@ -44,7 +44,7 @@ docker build . -f docker/Dockerfile -t naavre-environment-service:dev
 Deploy to with helm:
 
 ```shell
-helm --kube-context minikube -n naavre-environment-service upgrade --install --create-namespace naavre-environment-service ./helm/naavre-environment-service -f values-dev.yaml
+helm --kube-context minikube -n naavre-environment-service upgrade --install --create-namespace naavre-environment-service ./helm/naavre-environment-service -f dev/values.yaml
 ```
 
 ## Build Docker image
