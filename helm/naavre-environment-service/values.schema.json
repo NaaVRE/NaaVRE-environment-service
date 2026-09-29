@@ -273,7 +273,8 @@
         "BINDER_URL": { "type": ["string" ] },
         "BINDER_API_TOKEN": { "type": ["string" ] },
         "CATALOGUE_URL": { "type": ["string" ] },
-        "CATALOGUE_API_TOKEN": { "type": ["string" ] }
+        "CATALOGUE_API_TOKEN": { "type": ["string" ] },
+        "IMAGE_PULLER_PAUSE_IMAGE": { "type": ["string" ] }
       },
       "required": ["BINDER_URL", "BINDER_API_TOKEN", "CATALOGUE_URL", "CATALOGUE_API_TOKEN"]
     }

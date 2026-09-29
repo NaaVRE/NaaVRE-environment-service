@@ -64,3 +64,15 @@ class Env:
                 filename
                 )
         return filename
+
+    @property
+    def IMAGE_PULLER_NAMESPACE(self) -> str:
+        return os.environ["IMAGE_PULLER_NAMESPACE"]
+
+    @property
+    def IMAGE_PULLER_NAME(self) -> str:
+        return os.environ["IMAGE_PULLER_NAME"]
+
+    @property
+    def IMAGE_PULLER_PAUSE_IMAGE(self) -> str:
+        return os.environ["IMAGE_PULLER_PAUSE_IMAGE"]

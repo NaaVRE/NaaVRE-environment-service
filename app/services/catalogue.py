@@ -10,8 +10,8 @@ logger = logging.getLogger(__name__)
 
 class APIListResponse[T](BaseModel):
     count: int
-    next: int | None
-    previous: int | None
+    next: str | None
+    previous: str | None
     results: list[T]
 
 
@@ -20,6 +20,29 @@ class BinderEnvironmentResponse(BaseModel):
     binder_ref: str
     container_image: str | None = None
     pre_pull: bool
+
+
+async def get_pre_pull_environments() -> list[BinderEnvironmentResponse]:
+    """ Retrieve all BinderEnvironment records flagged for pre-pulling """
+    catalogue_base = f"{env.CATALOGUE_URL}/binder-environments/"
+
+    results: list[BinderEnvironmentResponse] = []
+
+    async with httpx.AsyncClient(verify=env.VERIFY_SSL) as client:
+        url = catalogue_base
+        while url is not None:
+            resp = await client.get(
+                url,
+                params={"pre_pull": "true"},
+                )
+            resp.raise_for_status()
+            page = APIListResponse[BinderEnvironmentResponse].model_validate(
+                resp.json()
+                )
+            results.extend(page.results)
+            url = page.next
+
+    return results
 
 
 async def upsert_binder_environment(
