@@ -7,13 +7,16 @@ import httpx
 import respx
 
 from app.main import app
+from app.tests.routes.helpers import (
+    CATALOGUE_API_TOKEN,
+    CATALOGUE_URL,
+    catalogue_list_response,
+    )
 
 logger = logging.getLogger(__name__)
 
 BINDER_URL = "https://binder.test"
-CATALOGUE_URL = "https://catalogue.test"
 BINDER_API_TOKEN = "binder-test-token"
-CATALOGUE_API_TOKEN = "catalogue-test-token"
 TOKEN = "test-token"
 
 
@@ -30,15 +33,6 @@ def mock_stream(*events: dict[str, str]) -> MockStreamingResponse:
     return MockStreamingResponse(
         [f"data: {json.dumps(event)}\n\n" for event in events]
         )
-
-
-def catalogue_list_response(*, results: list[dict]) -> dict:
-    return {
-        "count": len(results),
-        "next": None,
-        "previous": None,
-        "results": results,
-        }
 
 
 @respx.mock
