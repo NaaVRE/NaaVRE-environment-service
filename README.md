@@ -32,7 +32,7 @@ uv run coverage run -m pytest app/tests/ --log-cli-level=DEBUG
 uv run coverage report
 ```
 
-## Running in minikube
+### Running in minikube
 
 Build the image into minikube (refer to the minikube documentation for details):
 
