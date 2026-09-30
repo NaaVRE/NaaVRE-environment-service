@@ -1,0 +1,40 @@
+{{- if .Values.conf.image_puller.cron.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ printf "%s-image-puller-sync" (include "naavre-environment-service.fullname" . | trunc 41 | trimSuffix "-") }}
+  labels:
+    {{- include "naavre-environment-service.labels" . | nindent 4 }}
+spec:
+  schedule: {{ .Values.conf.image_puller.cron.schedule | quote }}
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            {{- include "naavre-environment-service.selectorLabels" . | nindent 12 }}
+        spec:
+          serviceAccountName: {{ include "naavre-environment-service.serviceAccountName" . }}
+          {{- with .Values.imagePullSecrets }}
+          imagePullSecrets:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          restartPolicy: OnFailure
+          containers:
+            - name: image-puller-sync
+              image: {{ .Values.conf.image_puller.cron.image | quote }}
+              command:
+                - /bin/sh
+                - -c
+                - >
+                  curl --fail --show-error --silent --request POST
+                  --header "Authorization: Bearer ${TOKEN}"
+                  "http://{{ include "naavre-environment-service.fullname" . }}:{{ .Values.service.port }}/image-puller/sync"
+              env:
+                - name: TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ printf "%s-image-puller-sync-token" (include "naavre-environment-service.fullname" . | trunc 35 | trimSuffix "-") }}
+                      key: token
+{{- end }}

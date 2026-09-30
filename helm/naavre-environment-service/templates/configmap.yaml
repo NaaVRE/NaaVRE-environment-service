@@ -1,3 +1,15 @@
+{{- $configuration := deepCopy .Values.conf.configuration -}}
+{{- $cronToken := "" -}}
+{{- if .Values.conf.image_puller.cron.enabled -}}
+  {{- $secretName := printf "%s-image-puller-sync-token" (include "naavre-environment-service.fullname" . | trunc 35 | trimSuffix "-") -}}
+  {{- $existingSecret := lookup "v1" "Secret" .Release.Namespace $secretName -}}
+  {{- $cronToken = randAlphaNum 64 -}}
+  {{- if and $existingSecret (hasKey $existingSecret.data "token") -}}
+    {{- $cronToken = index $existingSecret.data "token" | b64dec -}}
+  {{- end -}}
+  {{- $users := append $configuration.users (dict "id" "__helm_cron" "auth" (list (dict "method" "token" "token" $cronToken))) -}}
+  {{- $_ := set $configuration "users" $users -}}
+{{- end -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -7,4 +19,16 @@ metadata:
 
 data:
   configuration.json: |
-    {{- .Values.conf.configuration | toJson | nindent 4 }}
+    {{- $configuration | toJson | nindent 4 }}
+{{- if .Values.conf.image_puller.cron.enabled }}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ printf "%s-image-puller-sync-token" (include "naavre-environment-service.fullname" . | trunc 35 | trimSuffix "-") }}
+  labels:
+    {{- include "naavre-environment-service.labels" . | nindent 4 }}
+type: Opaque
+stringData:
+  token: {{ $cronToken | quote }}
+{{- end }}

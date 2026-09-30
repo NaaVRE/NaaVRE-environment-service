@@ -260,9 +260,26 @@
             }
           },
           "required": ["users"]
+        },
+        "image_puller": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "cron": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "enabled": { "type": "boolean", "default": false },
+                "schedule": { "type": "string", "default": "*/5 * * * *" },
+                "image": { "type": "string", "default": "quay.io/curl/curl:latest" }
+              },
+              "required": ["enabled", "schedule", "image"]
+            }
+          },
+          "required": ["cron"]
         }
       },
-      "required": ["rootPath", "configuration"]
+      "required": ["rootPath", "configuration", "image_puller"]
     },
     "env": {
       "type": "object",

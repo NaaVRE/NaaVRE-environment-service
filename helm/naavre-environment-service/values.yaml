@@ -168,6 +168,13 @@ conf:
       #   auth:
       #     - method: token
       #       token: example-token
+  image_puller:
+    cron:
+      # Periodically synchronize the image-puller DaemonSet with the catalogue.
+      enabled: false
+      # Cron expression defining when the sync job runs.
+      schedule: "*/5 * * * *"
+      image: quay.io/curl/curl:latest
 
 env:
   DEBUG: "false"

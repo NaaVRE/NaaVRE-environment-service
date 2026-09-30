@@ -13,10 +13,11 @@ spec:
       {{- include "naavre-environment-service.selectorLabels" . | nindent 6 }}
   template:
     metadata:
-      {{- with .Values.podAnnotations }}
       annotations:
+        {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
-      {{- end }}
+        {{- end }}
+        rollme: {{ randAlphaNum 5 | quote }}
       labels:
         {{- include "naavre-environment-service.labels" . | nindent 8 }}
         {{- with .Values.podLabels }}
