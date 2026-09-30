@@ -34,6 +34,37 @@ def _image_pull_container_name(binder_ref: str) -> str:
     return f"image-pull-{digest}"
 
 
+def _image_puller_node_affinity() -> client.V1Affinity | None:
+    """ Generate node affinity for te image-puller daemonset
+
+    Honors the Jupyter Hub node selectors as described in
+    https://z2jh.jupyter.org/en/stable/administrator/optimization.html
+    """
+
+    if env.IMAGE_PULLER_MATCH_NODE_PURPOSE == "require":
+        return client.V1Affinity(
+            node_affinity=client.V1NodeAffinity(
+                required_during_scheduling_ignored_during_execution=(
+                    client.V1NodeSelector(
+                        node_selector_terms=[
+                            client.V1NodeSelectorTerm(
+                                match_expressions=[
+                                    client.V1NodeSelectorRequirement(
+                                        key="hub.jupyter.org/node-purpose",
+                                        operator="In",
+                                        values=["user"],
+                                        )
+                                    ]
+                                )
+                            ]
+                        )
+                ),
+                ),
+            )
+    else:
+        return None
+
+
 def _build_daemonset(
         environments: list[BinderEnvironmentResponse],
         ) -> client.V1DaemonSet:
@@ -71,9 +102,7 @@ def _build_daemonset(
                 image_pull_policy="IfNotPresent",
                 ),
             ],
-        # Pull images on every node
-        # FIXME: this needs to be tunable in a way compliant with
-        # https://z2jh.jupyter.org/en/stable/administrator/optimization.html#using-a-dedicated-node-pool-for-users
+        affinity=_image_puller_node_affinity(),
         tolerations=[
             client.V1Toleration(operator="Exists"),
             ],

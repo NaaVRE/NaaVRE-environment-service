@@ -229,6 +229,28 @@
       "type": "object",
       "additionalProperties": true
     },
+    "image_puller_cron": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean", "default": false },
+        "schedule": { "type": "string", "default": "*/5 * * * *" },
+        "image": { "type": "string", "default": "quay.io/curl/curl:latest" },
+        "nodeAffinity": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "matchNodePurpose": {
+              "type": "string",
+              "enum": ["ignore", "prefer", "require"],
+              "default": "prefer"
+            }
+          },
+          "required": ["matchNodePurpose"]
+        }
+      },
+      "required": ["enabled", "schedule", "image", "nodeAffinity"]
+    },
     "conf": {
       "type": "object",
       "additionalProperties": false,
@@ -260,26 +282,9 @@
             }
           },
           "required": ["users"]
-        },
-        "image_puller": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "cron": {
-              "type": "object",
-              "additionalProperties": false,
-              "properties": {
-                "enabled": { "type": "boolean", "default": false },
-                "schedule": { "type": "string", "default": "*/5 * * * *" },
-                "image": { "type": "string", "default": "quay.io/curl/curl:latest" }
-              },
-              "required": ["enabled", "schedule", "image"]
-            }
-          },
-          "required": ["cron"]
         }
       },
-      "required": ["rootPath", "configuration", "image_puller"]
+      "required": ["rootPath", "configuration"]
     },
     "env": {
       "type": "object",

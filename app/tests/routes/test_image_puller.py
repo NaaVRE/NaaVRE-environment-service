@@ -80,6 +80,58 @@ def test_sync_creates_daemonset_with_one_image(
         ]
     assert daemonset.spec.template.spec.init_containers[0].image == image
     assert daemonset.spec.template.spec.containers[0].image == PAUSE_IMAGE
+    assert daemonset.spec.template.spec.node_selector is None
+    assert daemonset.spec.template.spec.affinity is None
+
+
+@respx.mock
+def test_sync_requires_dedicated_user_node_pool(
+        mock_kube_api: Mock,
+        monkeypatch: pytest.MonkeyPatch,
+        ) -> None:
+    monkeypatch.setenv("IMAGE_PULLER_MATCH_NODE_PURPOSE", "require")
+    mock_pre_pull_catalogue([])
+    mock_kube_api.read_namespaced_daemon_set.side_effect = (
+        client.ApiException(status=404, reason="Not Found")
+        )
+
+    with TestClient(app) as test_client:
+        response = test_client.post(
+            "/image-puller/sync",
+            headers={"Authorization": f"Bearer {TOKEN}"},
+            )
+
+    assert response.status_code == 200
+    daemonset = mock_kube_api.create_namespaced_daemon_set.call_args.kwargs[
+        "body"
+        ]
+    required = (
+        daemonset.spec.template.spec.affinity
+        .node_affinity
+        .required_during_scheduling_ignored_during_execution
+        )
+    assert required.node_selector_terms[0].match_expressions == [
+        client.V1NodeSelectorRequirement(
+            key="hub.jupyter.org/node-purpose",
+            operator="In",
+            values=["user"],
+            )
+        ]
+
+
+@pytest.mark.parametrize("match_node_purpose", ["ignore", "prefer"])
+def test_sync_does_not_require_user_node_pool(
+        mock_kube_api: Mock,
+        monkeypatch: pytest.MonkeyPatch,
+        match_node_purpose: str,
+        ) -> None:
+    monkeypatch.setenv(
+        "IMAGE_PULLER_MATCH_NODE_PURPOSE", match_node_purpose
+        )
+
+    daemonset = k8s._build_daemonset([])
+
+    assert daemonset.spec.template.spec.affinity is None
 
 
 @respx.mock

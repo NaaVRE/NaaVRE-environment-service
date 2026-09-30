@@ -1,6 +1,6 @@
 {{- $configuration := deepCopy .Values.conf.configuration -}}
 {{- $cronToken := "" -}}
-{{- if .Values.conf.image_puller.cron.enabled -}}
+{{- if .Values.image_puller_cron.enabled -}}
   {{- $secretName := printf "%s-image-puller-sync-token" (include "naavre-environment-service.fullname" . | trunc 35 | trimSuffix "-") -}}
   {{- $existingSecret := lookup "v1" "Secret" .Release.Namespace $secretName -}}
   {{- $cronToken = randAlphaNum 64 -}}
@@ -20,7 +20,7 @@ metadata:
 data:
   configuration.json: |
     {{- $configuration | toJson | nindent 4 }}
-{{- if .Values.conf.image_puller.cron.enabled }}
+{{- if .Values.image_puller_cron.enabled }}
 ---
 apiVersion: v1
 kind: Secret

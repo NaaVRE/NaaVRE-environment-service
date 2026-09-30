@@ -1,3 +1,4 @@
+import json
 import os
 
 
@@ -76,3 +77,15 @@ class Env:
     @property
     def IMAGE_PULLER_PAUSE_IMAGE(self) -> str:
         return os.environ["IMAGE_PULLER_PAUSE_IMAGE"]
+
+    @property
+    def IMAGE_PULLER_MATCH_NODE_PURPOSE(self) -> str:
+        match_node_purpose = os.getenv(
+            "IMAGE_PULLER_MATCH_NODE_PURPOSE", "prefer"
+            )
+        if match_node_purpose not in {"ignore", "prefer", "require"}:
+            raise ValueError(
+                "IMAGE_PULLER_MATCH_NODE_PURPOSE must be one of "
+                "'ignore', 'prefer', or 'require'"
+                )
+        return match_node_purpose

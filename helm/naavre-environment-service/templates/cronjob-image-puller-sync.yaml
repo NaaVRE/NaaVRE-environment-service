@@ -1,4 +1,4 @@
-{{- if .Values.conf.image_puller.cron.enabled }}
+{{- if .Values.image_puller_cron.enabled }}
 apiVersion: batch/v1
 kind: CronJob
 metadata:
@@ -6,7 +6,7 @@ metadata:
   labels:
     {{- include "naavre-environment-service.labels" . | nindent 4 }}
 spec:
-  schedule: {{ .Values.conf.image_puller.cron.schedule | quote }}
+  schedule: {{ .Values.image_puller_cron.schedule | quote }}
   concurrencyPolicy: Forbid
   jobTemplate:
     spec:
@@ -23,7 +23,7 @@ spec:
           restartPolicy: OnFailure
           containers:
             - name: image-puller-sync
-              image: {{ .Values.conf.image_puller.cron.image | quote }}
+              image: {{ .Values.image_puller_cron.image | quote }}
               command:
                 - /bin/sh
                 - -c
