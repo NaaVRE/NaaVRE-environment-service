@@ -25,6 +25,16 @@
     }
   },
   "properties": {
+    "global": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "enabled": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
     "replicaCount": {
       "type": "integer",
       "minimum": 1,
