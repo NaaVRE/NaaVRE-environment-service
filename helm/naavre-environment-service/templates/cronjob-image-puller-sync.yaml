@@ -2,7 +2,7 @@
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: {{ printf "%s-image-puller-sync" (include "naavre-environment-service.fullname" . | trunc 41 | trimSuffix "-") }}
+  name: {{ printf "%s-image-puller-sync" (include "naavre-environment-service.fullname" . | trunc 34 | trimSuffix "-") }}
   labels:
     {{- include "naavre-environment-service.labels" . | nindent 4 }}
 spec:
