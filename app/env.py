@@ -1,3 +1,4 @@
+import json
 import os
 
 
@@ -76,6 +77,23 @@ class Env:
     @property
     def IMAGE_PULLER_PAUSE_IMAGE(self) -> str:
         return os.environ["IMAGE_PULLER_PAUSE_IMAGE"]
+
+    @property
+    def IMAGE_PULL_SECRETS(self) -> list[str]:
+        image_pull_secrets = json.loads(
+            os.getenv("IMAGE_PULL_SECRETS", "[]")
+            )
+        if (not isinstance(image_pull_secrets, list)
+                or not all(
+                    isinstance(secret, dict)
+                    and isinstance(secret.get("name"), str)
+                    for secret in image_pull_secrets
+                    )):
+            raise ValueError(
+                "IMAGE_PULL_SECRETS must be a JSON array of objects "
+                "with a string 'name' field"
+                )
+        return [secret["name"] for secret in image_pull_secrets]
 
     @property
     def IMAGE_PULLER_MATCH_NODE_PURPOSE(self) -> str:

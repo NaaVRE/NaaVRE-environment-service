@@ -103,6 +103,10 @@ def _build_daemonset(
                 ),
             ],
         affinity=_image_puller_node_affinity(),
+        image_pull_secrets=[
+            client.V1LocalObjectReference(name=name)
+            for name in env.IMAGE_PULL_SECRETS
+            ] or None,
         tolerations=[
             client.V1Toleration(operator="Exists"),
             ],
