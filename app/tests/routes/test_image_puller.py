@@ -21,6 +21,7 @@ def mock_kube_api(monkeypatch: pytest.MonkeyPatch) -> Mock:
     monkeypatch.setenv("IMAGE_PULLER_NAMESPACE", KUBE_NAMESPACE)
     monkeypatch.setenv("IMAGE_PULLER_NAME", IMAGE_PULLER_NAME)
     monkeypatch.setenv("IMAGE_PULLER_PAUSE_IMAGE", PAUSE_IMAGE)
+    monkeypatch.setenv("IMAGE_PULL_SECRETS", "[]")
 
     apps_api = Mock()
     monkeypatch.setattr(k8s.config, "load_incluster_config", Mock())
@@ -82,6 +83,7 @@ def test_sync_creates_daemonset_with_one_image(
     assert daemonset.spec.template.spec.containers[0].image == PAUSE_IMAGE
     assert daemonset.spec.template.spec.node_selector is None
     assert daemonset.spec.template.spec.affinity is None
+    assert daemonset.spec.template.spec.image_pull_secrets is None
 
 
 @respx.mock
@@ -132,6 +134,26 @@ def test_sync_does_not_require_user_node_pool(
     daemonset = k8s._build_daemonset([])
 
     assert daemonset.spec.template.spec.affinity is None
+
+
+def test_sync_adds_configured_image_pull_secrets(
+        mock_kube_api: Mock,
+        monkeypatch: pytest.MonkeyPatch,
+        ) -> None:
+    monkeypatch.setenv(
+        "IMAGE_PULL_SECRETS",
+        '[{"name":"registry-credentials"},'
+        '{"name":"another-registry-credentials"}]',
+        )
+
+    daemonset = k8s._build_daemonset([])
+
+    assert daemonset.spec.template.spec.image_pull_secrets == [
+        client.V1LocalObjectReference(name="registry-credentials"),
+        client.V1LocalObjectReference(
+            name="another-registry-credentials"
+            ),
+        ]
 
 
 @respx.mock
