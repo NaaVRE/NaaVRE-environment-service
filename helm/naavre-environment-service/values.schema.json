@@ -7,18 +7,13 @@
     "authMethodToken": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["method", "token"],
+      "required": ["token"],
       "properties": {
-        "method": { "type": "string", "enum": ["token"] },
         "token": { "type": "string" }
       }
     },
     "authMethod": {
       "type": "object",
-      "required": ["method"],
-      "properties": {
-        "method": { "type": "string" }
-      },
       "oneOf": [
         { "$ref": "#/definitions/authMethodToken" }
       ]

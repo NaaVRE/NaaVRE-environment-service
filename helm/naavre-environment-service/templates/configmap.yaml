@@ -7,7 +7,7 @@
   {{- if and $existingSecret (hasKey $existingSecret.data "token") -}}
     {{- $cronToken = index $existingSecret.data "token" | b64dec -}}
   {{- end -}}
-  {{- $users := append $configuration.users (dict "id" "__helm_cron" "auth" (list (dict "method" "token" "token" $cronToken))) -}}
+  {{- $users := append $configuration.users (dict "id" "__helm_cron" "auth" (list (dict "token" $cronToken))) -}}
   {{- $_ := set $configuration "users" $users -}}
 {{- end -}}
 apiVersion: v1
