@@ -16,8 +16,7 @@ conf:
     users: []
       # - id: example-user
       #   auth:
-      #     - method: token
-      #       token: example-token
+      #     - token: example-token
 
 env:
   BINDER_URL: "https://example.com/binderhub/"

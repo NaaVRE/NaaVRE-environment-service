@@ -4,7 +4,6 @@
       "id": "dev-user",
       "auth": [
         {
-          "method": "token",
           "token": "dev-token"
         }
       ]

@@ -1,10 +1,7 @@
-from typing import Literal
-
 from pydantic import BaseModel
 
 
 class TokenAuthMethod(BaseModel):
-    method: Literal["token"]
     token: str
 
     def verify(self, token: str) -> bool:
