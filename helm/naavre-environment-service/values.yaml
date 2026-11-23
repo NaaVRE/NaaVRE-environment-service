@@ -175,6 +175,29 @@ image_puller_cron:
     # Allowed values: ignore, prefer and require.
     matchNodePurpose: prefer
 
+image_rebuilder_hook:
+  # Lists binder environments from the catalogue (pre_pull=true and
+  # has_container_image=true) and rebuilds them.
+  # Triggered on:
+  #   - post-install
+  #   - post-upgrade if `key` has changed since the last successful deployment
+  enabled: true
+  # Change this value (to any string) to trigger a rebuild on the next upgrade.
+  key: ""
+  # Time (in seconds) to wait for the catalogue and the environment service to
+  # become available
+  waitTimeout: 600
+  # Interval (in seconds) between attempts to reach the catalogue and
+  # environment service
+  waitRetryInterval: 10
+  # Number of attempts for each build, in case the build stream is
+  # interrupted. Builds reported as failed by Binder are not retried.
+  buildAttempts: 3
+  # Job retries.
+  backoffLimit: 0
+  # Job deadline, in seconds (optional).
+  activeDeadlineSeconds:
+
 conf:
   rootPath: /
   configuration:

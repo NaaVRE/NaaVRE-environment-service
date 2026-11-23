@@ -106,3 +106,35 @@ class Env:
                 "'ignore', 'prefer', or 'require'"
                 )
         return match_node_purpose
+
+    @property
+    def IMAGE_REBUILDER_SERVICE_URL(self) -> str:
+        """ URL of the environment service, as reached by the image
+        rebuilder job (e.g. the in-cluster service URL) """
+        return os.environ["IMAGE_REBUILDER_SERVICE_URL"].rstrip("/")
+
+    @property
+    def IMAGE_REBUILDER_TOKEN(self) -> str:
+        """ Token used by the image rebuilder job to call the build route """
+        return os.environ["IMAGE_REBUILDER_TOKEN"]
+
+    @property
+    def IMAGE_REBUILDER_WAIT_TIMEOUT(self) -> float:
+        """ Time (in seconds) to wait for the catalogue and the environment
+        service to become available """
+        return float(os.getenv("IMAGE_REBUILDER_WAIT_TIMEOUT", "600"))
+
+    @property
+    def IMAGE_REBUILDER_WAIT_RETRY_INTERVAL(self) -> float:
+        """ Interval (in seconds) between attempts to reach the catalogue and
+        environment service """
+        return float(os.getenv("IMAGE_REBUILDER_WAIT_RETRY_INTERVAL", "10"))
+
+    @property
+    def IMAGE_REBUILDER_BUILD_ATTEMPTS(self) -> int:
+        """ Number of attempts for each build, in case the build stream is
+        interrupted (builds reported as failed by Binder are not retried) """
+        attempts = int(os.getenv("IMAGE_REBUILDER_BUILD_ATTEMPTS", "3"))
+        if attempts < 1:
+            raise ValueError("IMAGE_REBUILDER_BUILD_ATTEMPTS must be >= 1")
+        return attempts

@@ -60,3 +60,45 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+{{/*
+Name of the configmap holding the last image_rebuilder_hook.key for which the
+image rebuilder hook succeeded
+*/}}
+{{- define "naavre-environment-service.imageRebuilderStateName" -}}
+{{- printf "%s-image-rebuilder-state" (include "naavre-environment-service.fullname" . | trunc 35 | trimSuffix "-") }}
+{{- end }}
+
+{{/*
+Value of image_rebuilder_hook.key
+*/}}
+{{- define "naavre-environment-service.imageRebuilderKey" -}}
+{{- .Values.image_rebuilder_hook.key | default "" | toString -}}
+{{- end }}
+
+{{/*
+Whether the image rebuilder hook should run. Returns "true" or "".
+
+The hook runs:
+- on install
+- on upgrade, if image_rebuilder_hook.key differs from the key stored by the
+  last successful run of the hook.
+*/}}
+{{- define "naavre-environment-service.imageRebuilderShouldRun" -}}
+{{- if .Values.image_rebuilder_hook.enabled -}}
+{{- if .Release.IsInstall -}}
+true
+{{- else -}}
+{{- $state := lookup "v1" "ConfigMap" .Release.Namespace (include "naavre-environment-service.imageRebuilderStateName" .) -}}
+{{- $previousKey := "" -}}
+{{- $hasPrevious := false -}}
+{{- if and $state $state.data (hasKey $state.data "key") -}}
+{{- $previousKey = index $state.data "key" -}}
+{{- $hasPrevious = true -}}
+{{- end -}}
+{{- if or (not $hasPrevious) (ne $previousKey (include "naavre-environment-service.imageRebuilderKey" .)) -}}
+true
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- end }}

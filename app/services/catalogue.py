@@ -33,7 +33,7 @@ async def get_pre_pull_environments() -> list[BinderEnvironmentResponse]:
         while url is not None:
             resp = await client.get(
                 url,
-                params={"pre_pull": "true"},
+                params={"pre_pull": "true", "has_container_image": "true"},
                 )
             resp.raise_for_status()
             page = APIListResponse[BinderEnvironmentResponse].model_validate(
