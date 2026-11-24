@@ -181,7 +181,7 @@ image_rebuilder_hook:
   # Triggered on:
   #   - post-install
   #   - post-upgrade if `key` has changed since the last successful deployment
-  enabled: true
+  enabled: false
   # Change this value (to any string) to trigger a rebuild on the next upgrade.
   key: ""
   # Time (in seconds) to wait for the catalogue and the environment service to
