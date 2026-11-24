@@ -34,7 +34,7 @@ def mock_kube_api(monkeypatch: pytest.MonkeyPatch) -> Mock:
 def mock_pre_pull_catalogue(environments: list[dict]) -> respx.Route:
     return respx.get(
         f"{CATALOGUE_URL}/binder-environments/",
-        params={"pre_pull": "true"},
+        params={"pre_pull": "true", "has_container_image": "true"},
         ).respond(
         200, json=catalogue_list_response(results=environments)
         )
@@ -46,6 +46,7 @@ def catalogue_environment(binder_ref: str, image: str) -> dict:
         "binder_ref": binder_ref,
         "container_image": image,
         "pre_pull": True,
+        "has_container_image": True,
         }
 
 

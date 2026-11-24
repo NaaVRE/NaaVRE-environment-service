@@ -256,6 +256,20 @@
       },
       "required": ["enabled", "schedule", "image", "nodeAffinity"]
     },
+    "image_rebuilder_hook": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean", "default": true },
+        "key": { "type": ["string", "null"], "default": "" },
+        "waitTimeout": { "type": "integer", "minimum": 0, "default": 600 },
+        "waitRetryInterval": { "type": "integer", "minimum": 0, "default": 10 },
+        "buildAttempts": { "type": "integer", "minimum": 1, "default": 3 },
+        "backoffLimit": { "type": "integer", "minimum": 0, "default": 0 },
+        "activeDeadlineSeconds": { "type": ["integer", "null"], "minimum": 1 }
+      },
+      "required": ["enabled", "key", "waitTimeout", "buildAttempts", "waitRetryInterval","backoffLimit"]
+    },
     "conf": {
       "type": "object",
       "additionalProperties": false,

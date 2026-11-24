@@ -1,0 +1,86 @@
+{{- if include "naavre-environment-service.imageRebuilderShouldRun" . }}
+{{- /*
+Job that rebuilds the binder environments retrieved from the catalogue
+*/ -}}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ printf "%s-image-rebuilder" (include "naavre-environment-service.fullname" . | trunc 45 | trimSuffix "-") }}
+  labels:
+    {{- include "naavre-environment-service.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "0"
+    helm.sh/hook-delete-policy: before-hook-creation
+spec:
+  backoffLimit: {{ .Values.image_rebuilder_hook.backoffLimit }}
+  {{- with .Values.image_rebuilder_hook.activeDeadlineSeconds }}
+  activeDeadlineSeconds: {{ . }}
+  {{- end }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: image-rebuilder
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: image-rebuilder
+          {{- with .Values.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - /code/.venv/bin/python
+            - -m
+            - app.jobs.rebuild_environments
+          env:
+            - name: DEBUG
+              value: {{ .Values.env.DEBUG | default "false" | quote }}
+            - name: VERIFY_SSL
+              value: {{ .Values.env.VERIFY_SSL | default "true" | quote }}
+            - name: CATALOGUE_URL
+              value: {{ .Values.env.CATALOGUE_URL | quote }}
+            - name: IMAGE_REBUILDER_SERVICE_URL
+              value: "http://{{ include "naavre-environment-service.fullname" . }}:{{ .Values.service.port }}"
+            - name: IMAGE_REBUILDER_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ printf "%s-image-managers-token" (include "naavre-environment-service.fullname" . | trunc 35 | trimSuffix "-") }}
+                  key: token
+            - name: IMAGE_REBUILDER_WAIT_TIMEOUT
+              value: {{ .Values.image_rebuilder_hook.waitTimeout | quote }}
+            - name: IMAGE_REBUILDER_WAIT_RETRY_INTERVAL
+              value: {{ .Values.image_rebuilder_hook.waitRetryInterval | quote }}
+            - name: IMAGE_REBUILDER_BUILD_ATTEMPTS
+              value: {{ .Values.image_rebuilder_hook.buildAttempts | quote }}
+---
+{{- /* cm that saves the image rebuilder key after a successful build job.
+
+The cm is a hook with a higher weight than the job, which means that it is only
+updated after a successful job.
+*/ -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "naavre-environment-service.imageRebuilderStateName" . }}
+  labels:
+    {{- include "naavre-environment-service.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "1"
+    helm.sh/hook-delete-policy: before-hook-creation
+data:
+  key: {{ include "naavre-environment-service.imageRebuilderKey" . | quote }}
+{{- end }}

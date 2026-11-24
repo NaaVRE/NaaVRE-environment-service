@@ -35,6 +35,6 @@ spec:
                 - name: TOKEN
                   valueFrom:
                     secretKeyRef:
-                      name: {{ printf "%s-image-puller-sync-token" (include "naavre-environment-service.fullname" . | trunc 35 | trimSuffix "-") }}
+                      name: {{ printf "%s-image-managers-token" (include "naavre-environment-service.fullname" . | trunc 35 | trimSuffix "-") }}
                       key: token
 {{- end }}
